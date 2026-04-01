@@ -1,0 +1,12 @@
+Sucursal A ha enviado información: 2
+Votos Mejor personaje (Inori): 1
+Votos Mejor anime (AAAAA): No existe
+Votos Mejor anime (Kaguya-hime!): 0
+Ganador Mejor personaje: Empate
+Ganador Mejor anime: No se puede determinar
+Sucursal A ha enviado información: 1
+Ganador Mejor personaje: Inori
+Sucursal B ha enviado información: 2
+Sucursal B ha enviado información: 3
+Sucursal C ha enviado información: 4
+Ganador Mejor anime: Kaguya-hime!

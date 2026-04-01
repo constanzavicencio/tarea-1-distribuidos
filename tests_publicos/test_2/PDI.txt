@@ -1,0 +1,6 @@
+A;Goku;Repetido
+A;Naruto Uzumaki;Cerrado
+B;Naruto Uzumaki;Cerrado
+A;Usagi Tsukino;Indocumentado
+A;Sakura Kinomoto;Sucursal incorrecta
+A;Goku;Repetido

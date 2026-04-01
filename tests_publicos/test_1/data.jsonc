@@ -1,0 +1,117 @@
+{
+    "nombre": "Test_Publico_1",
+    "descripcion": "Mejor anime y mejor personaje. No contiene nada de publish/subscribe",
+
+    // JSON con la configuración de la votación
+    "configuracion": "c1",
+
+    "eventos": [
+        // ###################################
+        // Evento 1: Votar en una sucursal
+        // Formato "votar", sucursal, ID votante, ID votación, preferencias, estados
+        ["votar", "A", 9, "V2", ["Inori"], []],
+        // "9" vota en A en tema V2 por Inori
+        
+        ["votar", "A", 8, "V2", ["Hikaru", "Loid"], []],
+        // "8" vota en A en tema V2 por Hikaru. Hay otra preferncia pero no es una opción valida.
+        // Hay empate por ahora en "V2"
+        
+        ["votar", "A", 7, "V999", ["AAA", "BBB"], []],
+        // "7" vota en A en tema V999 por Hikaru, no existe ese tema así que no hay voto.
+        
+        ["votar", "B", 1, "V2", ["Inori", "Hikaru"], []],
+        // "1" vota en B en tema V2 Nulo porque tiene 2 opciones validas en preferencias
+        ["votar", "B", 4, "V2", ["Naruto", "Hinata"], []],
+        // "4" vota en B en tema V2 Blanco porque no tiene ninguna preferencia que sea una opción
+        
+        // ###################################
+        // Evento 2: Reportar votos de un sucursal al Servel
+        // Formato "reportar", Sucursal
+        ["reportar", "A"], // LOG: Sucursal A ha enviado información: 2
+
+        // ###################################
+        // Evento 3: log de una opción para ver cantidad de votos
+        // Formato: "log", ID votación, opción.
+        // ID votación siempre debe existir, pero opción puede ser cualquier cosa
+        ["log", "V2", "Inori"], // LOG: Votos {tema} (Inori): 1
+        ["log", "V1", "AAAAA"], // LOG: Votos {tema} (AAAAA): No existe
+        ["log", "V1", "Kaguya-hime!"], // LOG: Votos {tema} (Kaguya-hime!): 0 
+
+        // ###################################
+        // Evento 4: ganador de una votación
+        // Formato "ganador", ID votación
+        // ID votación siempre debe existir
+        ["ganador", "V2"], // LOG: Ganador {tema}: Empate
+        ["ganador", "V1"], // LOG: Ganador {tema}: No se puede determinar
+        
+        ["votar", "A", 12, "V2", ["Inori"], []],
+        // "12" vota en "A" en tema V2 por Inori. Ahora ella tiene 2 votos.
+
+        ["reportar", "A"], // LOG: Sucursal A ha enviado información: 1
+        ["ganador", "V2"], // LOG: Ganador {tema}: Inori
+
+        // ###################################
+        // Evento 5: cerrar una sucursal para que no puedan votar o reportar
+        // Formato "cerrar", sucursal
+        ["cerrar", "A"],
+        
+        ["votar", "A", 3, "V2", ["Inori"], []], // No se procesa
+        ["reportar", "A"], // No se procesa
+        ["cerrar", "A"], // No afecta en nada
+
+        // ###################################
+        // Evento 6: abrir una sucursal para que puedan votar o reportar
+        // Formato "reanudar", sucursal
+        ["reanudar", "A"],
+        ["reanudar", "A"], // No afecta en nada
+        ["reanudar", "B"], // No afecta en nada
+        
+        ["votar", "B", 4, "V2", ["Inori"], []],
+        // "4" vota en B en tema V2 pero es rechazado porque ya votó antes
+        ["reportar", "B"], // LOG: Sucursal B ha enviado información: 2
+        
+
+        // ###################################
+        // Casos especiales: "estados"
+        
+        // ## Mov. Reducida y corrupción
+        // "7" debe ir a C para votar en V1, pero irá a B. Se lo aceptan por ser "Mov. Reducida"
+        ["votar", "B", 7, "V1", ["Kaguya-hime!"], ["Mov. Reducida"]], 
+        // 1 voto para "Kaguya-hime!".
+        
+        // "7" va a otra sucursal a votar en V1 nuevamente. Se lo aceptan porque en esa no tienen registro de su voto
+        ["votar", "C", 7, "V1", ["Boku no ..."], []], 
+        // 1 voto para "Boku no ...".
+
+        // "7" lo intenta nuevamente pero y de forma corrupto. Se lo aceptan.
+        ["votar", "C", 7, "V1", ["Kaguya-hime!"], ["Corrupto"]], 
+        // 1 voto para "Kaguya-hime!".
+
+        // ## Indocumentado y corrupción
+        // "8" va a su sucursal a votar en V1. Se lo rechazan por ser indocumentado.
+        ["votar", "C", 8, "V1", ["Kaguya-hime!"], ["Indocumentado"]], 
+
+        // "8" lo intenta nuevamente pero como un indocumentado Corrupto. Ahora se lo aceptan.
+        ["votar", "C", 8, "V1", ["Kaguya-hime!"], ["Indocumentado", "Corrupto"]], 
+        // 1 voto para "Kaguya-hime!".
+        
+        // ## Negacionista
+        // "9" va a votar a su sucursal. Como es negacionista, votará por la opción que no esté en su preferencia
+        ["votar", "C", 9, "V1", ["Kaguya-hime!"], ["Negacionista"]], 
+        // 1 voto para "Boku no...".
+        
+        // "4" va a votar a su sucursal. Como es negacionista, votará por la opción que no esté en su preferencia
+        // Dado que quedan 2 opciones por votar, será Nulo
+        ["votar", "B", 4, "V1", ["Naruto", "One Piece"], ["Negacionista"]], 
+        // 1 voto Nulo
+        
+        // "5" va a votar a su sucursal. Como es negacionista, votará por la opción que no esté en su preferencia
+        // Dado que niega todas las opciones válidas, no le quedan opciones para votar
+        ["votar", "B", 5, "V1", ["Kaguya-hime!", "Boku no..."], ["Negacionista"]], 
+        // 1 voto Blanco
+
+        ["reportar", "B"], // LOG: Sucursal B ha enviado información: 3
+        ["reportar", "C"], // LOG: Sucursal C ha enviado información: 4    
+        ["ganador", "V1"] // LOG: Ganador {tema}: Kaguya-hime!
+    ]
+}
