@@ -135,9 +135,6 @@ class Servel:
         except FileNotFoundError:
             votante_nombre = 'Desconocido'
 
-        print(f'Nombre del votante: {votante_nombre}')
-
-        print(self.suscriptores)
         for subscriptor, filtros in self.suscriptores.items():
             coincide = False
             for filtro_sucursal, filtro_evento in filtros:
@@ -147,7 +144,6 @@ class Servel:
                     coincide = True
                     break
             if coincide:
-                print(f'El subscriptor {subscriptor} escucha este evento')
                 archivo_subscriptor = os.path.join('subscriptors', f'{subscriptor}.txt')
                 with open(archivo_subscriptor, 'a', encoding='utf-8') as archivo:
                     archivo.write(f'{sucursal};{votante_nombre};{evento}\n')
