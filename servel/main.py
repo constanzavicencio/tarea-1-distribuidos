@@ -1,22 +1,27 @@
 # Solo puedes importar las siguientes librerías y ninguna otra
 from xmlrpc.server import SimpleXMLRPCServer
 from sys import argv
-import os, json, math, threading, time
+import os
+import json
+
 
 def load_json(path):
     with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
+
 class Servel:
     def __init__(self, archivo_configuracion: str, archivo_log: str) -> None:
-        self.config_path = os.path.join('votes_configurations', f'{archivo_configuracion}.json')
+        self.config_path = os.path.join(
+            'votes_configurations',
+            f'{archivo_configuracion}.json')
         self.log_path = os.path.join('logs', f'{archivo_log}.txt')
         # Creamos el archivo para el log (vacío)
-        with open(self.log_path, 'w', encoding='utf-8') as f:
+        with open(self.log_path, 'w', encoding='utf-8'):
             pass
         # Cargamos la configuración
         self.configuration = load_json(self.config_path)
-        self.ids_votaciones = list(self.configuration['temas_votaciones'].keys())
+        self.ids_votaciones = self.configuration['temas_votaciones']
         self.temas = self.configuration['temas_votaciones']
         self.opciones = self.configuration['opciones_votaciones']
 
@@ -31,7 +36,7 @@ class Servel:
 
         # Inicializamos un registro de suscriptores (dict)
         self.suscriptores = {}
-        
+
     def recibir_votos(self, sucursal: str, votos: dict) -> None:
         total_votos = 0
         for id_votacion, dict_votos in votos.items():
@@ -42,19 +47,26 @@ class Servel:
                         self.votos_globales[id_votacion][opcion] += valor
                         total_votos += valor
         with open(self.log_path, 'a', encoding='utf-8') as archivo:
-            archivo.write(f'Sucursal {sucursal} ha enviado información: {total_votos}\n')
+            archivo.write(
+                f'Sucursal {sucursal} ha enviado información: {total_votos}\n'
+            )
 
     def ganador(self, id_votacion: str) -> None:
         tema = self.configuration['temas_votaciones'][id_votacion]
         votos = self.votos_globales[id_votacion]
-        opciones_validas = [op for op in votos.keys() if op not in ['Nulo', 'Blanco']]
+        opciones_validas = [
+            op for op in votos.keys() if op not in ['Nulo', 'Blanco']
+            ]
         votos_validos = sum(votos.get(op, 0) for op in opciones_validas)
 
         if votos_validos == 0 or not opciones_validas:
             resultado = 'No se puede determinar'
         else:
             max_votos = max(votos.get(op, 0) for op in opciones_validas)
-            ganadores = [op for op in opciones_validas if votos.get(op, 0) == max_votos]
+            ganadores = [
+                op for op in opciones_validas
+                if votos.get(op, 0) == max_votos
+            ]
             if len(ganadores) == 1:
                 resultado = ganadores[0]
             else:
@@ -75,16 +87,19 @@ class Servel:
     def new_subscriber(self, subscriptor: str) -> None:
         '''
         Crea un nuevo archivo que representará a un subscriptor.
-        El archivo se almacena en un directorio/carpeta llamado subscriptor y cuyo nombre
-        debe ser igual al indicado por el argumento subscriptor.
+        El archivo se almacena en un directorio/carpeta llamado subscriptor y
+        cuyo nombre debe ser igual al indicado por el argumento subscriptor.
 
-        Si el archivo indicado ya existe, este se debe eliminar y crear nuevamente para
-        asegurar que el contenido esté limpio.
+        Si el archivo indicado ya existe, este se debe eliminar y crear
+        nuevamente para asegurar que el contenido esté limpio.
 
-        Finalmente, el subscriptor no posee ningún filtro al momento de ser creado.
+        Finalmente, el subscriptor no posee ningún filtro al momento de ser
+        creado.
         '''
-        archivo_subscriptor = os.path.join('subscriptors', f'{subscriptor}.txt')
-        with open(archivo_subscriptor, 'w', encoding='utf-8') as archivo:
+        archivo_subscriptor = os.path.join(
+            'subscriptors', f'{subscriptor}.txt'
+            )
+        with open(archivo_subscriptor, 'w', encoding='utf-8'):
             pass
         self.suscriptores[subscriptor] = set()
 
@@ -115,16 +130,15 @@ class Servel:
             return None
         if (sucursal, evento) in self.suscriptores[subscriptor]:
             self.suscriptores[subscriptor].remove((sucursal, evento))
-    
+
     def publish(self, sucursal: str, id: str, evento: str) -> None:
         '''
         Primero, obtiene el nombre del votante a partir de su id.
-        Luego, publica el evento (sucursal, id, evento) a los subscriptores que concierna
-        con el formato sucursal;nombre_votante;evento
+        Luego, publica el evento (sucursal, id, evento) a los subscriptores que
+        concierna con el formato sucursal;nombre_votante;evento
         '''
-        votante_nombre = 'Desconocido' # redundante?
 
-        # Se obtiene el nombre del votante (en caso de existir)
+        # Se obtiene el nombre del votante a partir de su id
         try:
             with open('votantes.csv', 'r', encoding='utf-8') as archivo:
                 for linea in archivo:
@@ -132,6 +146,7 @@ class Servel:
                     if len(datos) >= 2 and str(datos[0]) == str(id):
                         votante_nombre = datos[1]
                         break
+        # Si no existe en los registros, se declara desconocido
         except FileNotFoundError:
             votante_nombre = 'Desconocido'
 
@@ -144,9 +159,12 @@ class Servel:
                     coincide = True
                     break
             if coincide:
-                archivo_subscriptor = os.path.join('subscriptors', f'{subscriptor}.txt')
-                with open(archivo_subscriptor, 'a', encoding='utf-8') as archivo:
-                    archivo.write(f'{sucursal};{votante_nombre};{evento}\n')
+                archivo_subscriptor = os.path.join(
+                    'subscriptors',
+                    f'{subscriptor}.txt'
+                )
+                with open(archivo_subscriptor, 'a', encoding='utf-8') as a:
+                    a.write(f'{sucursal};{votante_nombre};{evento}\n')
 
     def get_configuration(self) -> dict:
         return self.configuration
@@ -178,9 +196,9 @@ if __name__ == '__main__':
     IP_TAREA = '127.0.0.1'
 
     servel_votaciones = Servel(CONFIGURACION, LOGS)
-    
+
     server = SimpleXMLRPCServer((IP_TAREA, PUERTO), allow_none=True)
     server.register_instance(servel_votaciones)
-    
+
     print(f'Servidor RPC ejecutándose en {IP_TAREA}:{PUERTO}')
     server.serve_forever()

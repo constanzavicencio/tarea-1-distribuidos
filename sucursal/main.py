@@ -3,7 +3,6 @@ from typing import List
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.client import ServerProxy
 from sys import argv
-import os, json, math, threading, time
 
 
 class Sucursal:
@@ -17,7 +16,9 @@ class Sucursal:
         self.estado = 'Abierta'
 
         # Conectar con el servidor Servel
-        self.servel = ServerProxy(f'http://{IP_TAREA}:{puerto_servel}', allow_none=True)
+        self.servel = ServerProxy(
+            f'http://{IP_TAREA}:{puerto_servel}', allow_none=True
+            )
 
     def solicitar_información(self) -> None:
         # Actualiza estructura de votos y registro según configuración Servel.
@@ -25,12 +26,12 @@ class Sucursal:
         if not isinstance(config, dict):
             raise TypeError('La configuración recibida no es un diccionario')
         self.configuration = config
-        self.ids_votaciones = list(self.configuration['temas_votaciones'].keys())
+        self.ids_votaciones = self.configuration['temas_votaciones']
         self.temas = self.configuration['temas_votaciones']
         self.opciones = self.configuration['opciones_votaciones']
         self.registro['Ya Votaron'] = {id: [] for id in self.ids_votaciones}
         self.reiniciar_votos()
-  
+
     def reiniciar_votos(self) -> None:
         for id_votacion in self.ids_votaciones:
             self.registro['Votos'][id_votacion] = {}
@@ -45,12 +46,11 @@ class Sucursal:
     def reanudar(self) -> None:
         self.estado = 'Abierta'
 
-
     def reportar(self) -> None:
         if self.estado == 'Abierta':
             self.servel.recibir_votos(self.nombre, self.registro['Votos'])
             self.reiniciar_votos()
-    
+
     def votar(
         self,
         id_votante: str,
@@ -58,25 +58,27 @@ class Sucursal:
         preferencias: List[str],
         estados: List[str],
     ) -> None:
-        
+
         evento = ''
 
         # 1. verificar las condiciones que impiden votar
-        ### 1.a. sucursal está cerrada
+        # 1.a. sucursal está cerrada
         if self.estado != 'Abierta':
             evento = 'Cerrado'
-        ### 1.b. la votación no existe
+        # 1.b. la votación no existe
         elif id_votacion not in self.configuration['temas_votaciones']:
             evento = 'No existe'
-        ### 1.d. el votante está indocumentado
+        # 1.d. el votante está indocumentado
         elif 'Indocumentado' in estados:
             if 'Corrupto' not in estados:
                 evento = 'Indocumentado'
-        ### 1.c. el votante no está inscrito en la sucursal para dicha votación
-        elif int(id_votante) not in self.configuration['votantes_habilitados_sucursal'][self.nombre][id_votacion]:
+        # 1.c. el votante no está inscrito en la sucursal para dicha votación
+        elif int(id_votante) not in self.configuration[
+            'votantes_habilitados_sucursal'
+        ][self.nombre][id_votacion]:
             if 'Mov. Reducida' not in estados:
                 evento = 'Sucursal incorrecta'
-        ### 1.e. el votante ya votó previamente en dicha sucursal para la votación indicada
+        # 1.e. el votante ya votó en dicha sucursal para la votación indicada
         elif int(id_votante) in self.registro['Ya Votaron'][id_votacion]:
             if 'Corrupto' not in estados:
                 evento = 'Repetido'
@@ -87,14 +89,13 @@ class Sucursal:
 
             # Caso negacionista
             if 'Negacionista' in estados:
-                prefs_nuevas = set(opciones_validas) - set(preferencias)
-                preferencias = list(prefs_nuevas)
+                preferencias = list(set(opciones_validas) - set(preferencias))
 
             prefs_validas = []
             for preferencia in preferencias:
                 if preferencia in opciones_validas:
                     prefs_validas.append(preferencia)
-                        
+
             if len(prefs_validas) == 1:
                 pref_final = prefs_validas[0]
             elif len(prefs_validas) == 0:
@@ -111,8 +112,9 @@ class Sucursal:
         else:
             self.servel.publish(self.nombre, id_votante, evento)
 
-    def verificar_voto(self): # -> bool
+    def verificar_voto(self):  # -> bool
         pass
+
 
 if __name__ == '__main__':
     if len(argv) != 4 or not argv[1].isdigit():
@@ -140,11 +142,9 @@ if __name__ == '__main__':
     IP_TAREA = '127.0.0.1'
 
     sucursal = Sucursal(str(PUERTO_SERVEL), NOMBRE)
-    
+
     server = SimpleXMLRPCServer((IP_TAREA, PUERTO), allow_none=True)
     server.register_instance(sucursal)
-    
+
     print(f'Sucursal {NOMBRE} ejecutándose en {IP_TAREA}:{PUERTO}')
     server.serve_forever()
-
-    
