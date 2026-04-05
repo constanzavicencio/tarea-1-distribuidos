@@ -205,3 +205,15 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Otras carpetas
+servel/subscriptors/*
+!servel/subscriptors/.keep
+
+servel/logs/*
+!servel/logs/.keep
+
+servel/votes_configurations/*
+!servel/votes_configurations/.keep
+
+.correr_tests_procesos.json
