@@ -10,7 +10,7 @@ def load_json(path):
 class Servel:
     def __init__(self, archivo_configuracion: str, archivo_log: str) -> None:
         self.config_path = os.path.join('votes_configurations', f'{archivo_configuracion}.json')
-        self.log_path = os.path.join('logs', f'{archivo_log}.json')
+        self.log_path = os.path.join('logs', f'{archivo_log}.txt')
         # Creamos el archivo para el log (vacío)
         with open(self.log_path, 'w', encoding='utf-8') as f:
             pass
@@ -43,7 +43,6 @@ class Servel:
                         total_votos += valor
         with open(self.log_path, 'a', encoding='utf-8') as archivo:
             archivo.write(f'Sucursal {sucursal} ha enviado información: {total_votos}\n')
-        print((f'Sucursal {sucursal} ha enviado información: {total_votos}\n'))
 
     def ganador(self, id_votacion: str) -> None:
         tema = self.configuration['temas_votaciones'][id_votacion]
@@ -84,9 +83,7 @@ class Servel:
 
         Finalmente, el subscriptor no posee ningún filtro al momento de ser creado.
         '''
-        print(f'      [S] Ingresó el nuevo suscriptor {subscriptor}')
         archivo_subscriptor = os.path.join('subscriptors', f'{subscriptor}.txt')
-        print(f'      Path: {archivo_subscriptor}')
         with open(archivo_subscriptor, 'w', encoding='utf-8') as archivo:
             pass
         self.suscriptores[subscriptor] = set()
@@ -97,7 +94,6 @@ class Servel:
         El filtro corresponde al par (sucursal, evento) y determina qué
         eventos se deben notificar al subscriptor.
         '''
-        print(f'      [S] El subscriptor {subscriptor} agregó el nuevo filtro ({sucursal}, {evento})')
         if subscriptor not in self.suscriptores:
             return None
         self.suscriptores[subscriptor].add((sucursal, evento))
@@ -115,14 +111,20 @@ class Servel:
         Si el subscriptor no existe o el filtro no está registrado, entonces
         no ocurre ningún cambio
         '''
-        print(f'      [S] El subscriptor {subscriptor} eliminó el nuevo filtro ({sucursal}, {evento})')
         if subscriptor not in self.suscriptores:
             return None
         if (sucursal, evento) in self.suscriptores[subscriptor]:
             self.suscriptores[subscriptor].remove((sucursal, evento))
     
     def publish(self, sucursal: str, id: str, evento: str) -> None:
-        votante_nombre = 'Desconocido'
+        '''
+        Primero, obtiene el nombre del votante a partir de su id.
+        Luego, publica el evento (sucursal, id, evento) a los subscriptores que concierna
+        con el formato sucursal;nombre_votante;evento
+        '''
+        votante_nombre = 'Desconocido' # redundante?
+
+        # Se obtiene el nombre del votante (en caso de existir)
         try:
             with open('votantes.csv', 'r', encoding='utf-8') as archivo:
                 for linea in archivo:
@@ -133,16 +135,20 @@ class Servel:
         except FileNotFoundError:
             votante_nombre = 'Desconocido'
 
+        print(f'Nombre del votante: {votante_nombre}')
+
+        print(self.suscriptores)
         for subscriptor, filtros in self.suscriptores.items():
             coincide = False
             for filtro_sucursal, filtro_evento in filtros:
-                if (filtro_sucursal == '*' or filtro_sucursal == sucursal) and (
-                    filtro_evento == '*' or filtro_evento == evento
-                ):
+                sucursal_ok = filtro_sucursal in ('*', sucursal)
+                evento_ok = filtro_evento in ('*', evento)
+                if sucursal_ok and evento_ok:
                     coincide = True
                     break
             if coincide:
-                archivo_subscriptor = os.path.join('servel/subscriptors', f'{subscriptor}.txt')
+                print(f'El subscriptor {subscriptor} escucha este evento')
+                archivo_subscriptor = os.path.join('subscriptors', f'{subscriptor}.txt')
                 with open(archivo_subscriptor, 'a', encoding='utf-8') as archivo:
                     archivo.write(f'{sucursal};{votante_nombre};{evento}\n')
 

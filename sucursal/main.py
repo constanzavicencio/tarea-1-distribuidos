@@ -65,26 +65,21 @@ class Sucursal:
         ### 1.a. sucursal está cerrada
         if self.estado != 'Abierta':
             evento = 'Cerrado'
-            print(f'      {evento}')
         ### 1.b. la votación no existe
         elif id_votacion not in self.configuration['temas_votaciones']:
             evento = 'No existe'
-            print(f'      {evento}')
         ### 1.d. el votante está indocumentado
         elif 'Indocumentado' in estados:
             if 'Corrupto' not in estados:
                 evento = 'Indocumentado'
-                print(f'      {evento}')
         ### 1.c. el votante no está inscrito en la sucursal para dicha votación
         elif int(id_votante) not in self.configuration['votantes_habilitados_sucursal'][self.nombre][id_votacion]:
             if 'Mov. Reducida' not in estados:
                 evento = 'Sucursal incorrecta'
-                print(f'      {evento}')
         ### 1.e. el votante ya votó previamente en dicha sucursal para la votación indicada
         elif int(id_votante) in self.registro['Ya Votaron'][id_votacion]:
             if 'Corrupto' not in estados:
                 evento = 'Repetido'
-                print(f'      {evento}')
 
         # Registrar voto
         if evento == '':
@@ -92,7 +87,6 @@ class Sucursal:
 
             # Caso negacionista
             if 'Negacionista' in estados:
-                print('      Negacionista')
                 prefs_nuevas = set(opciones_validas) - set(preferencias)
                 preferencias = list(prefs_nuevas)
 
@@ -115,7 +109,6 @@ class Sucursal:
             self.registro['Votos'][id_votacion][pref_final] += 1
 
         else:
-            print(f'      !!! Voto inválido, se publica un evento ({self.nombre, id_votante, evento})')
             self.servel.publish(self.nombre, id_votante, evento)
 
     def verificar_voto(self): # -> bool
