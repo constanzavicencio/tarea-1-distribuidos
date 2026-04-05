@@ -3,6 +3,10 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Servel runtime directories (created by correr_tests.py)
+servel/logs/
+servel/subscriptors/
+
 # C extensions
 *.so
 

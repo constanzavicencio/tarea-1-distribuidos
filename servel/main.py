@@ -6,10 +6,11 @@ import os, json, math, threading, time
 
 class Servel:
     def __init__(self, archivo_configuacion: str, archivo_log: str) -> None:
-        with open("votes_configurations/" + archivo_configuacion, 'r', encoding='utf-8') as configuracion:
+        with open("votes_configurations/" + archivo_configuacion + ".json", 'r', encoding='utf-8') as configuracion:
             self.configuracion = json.load(configuracion)
-        self.archivo_log = archivo_log
-        with open(archivo_log, 'w', encoding='utf-8') as archivo:
+        self.archivo_log = os.path.join("logs", archivo_log)
+        os.makedirs("logs", exist_ok=True)
+        with open(self.archivo_log, 'w', encoding='utf-8') as archivo:
             pass
         self.votos_globales = {}
         for id_votacion in self.configuracion.get("temas_votaciones", {}):
@@ -20,6 +21,9 @@ class Servel:
             self.votos_globales[id_votacion]["Blanco"] = 0
         self.suscriptores = {}
         
+    def get_configuracion(self) -> dict:
+        return self.configuracion
+
     def recibir_votos(self, sucursal: str, votos: dict) -> None:
         total_votos = 0
         for id_votacion, lista_votos in votos.items():
@@ -62,7 +66,8 @@ class Servel:
             archivo.write(f"Votos {tema} ({opcion}): {resultado}\n")
 
     def new_subscriber(self, subscriptor: str) -> None:
-        archivo_subscriptor = os.path.join("servel/subscriptors", f"{subscriptor}.txt")
+        os.makedirs("subscriptors", exist_ok=True)
+        archivo_subscriptor = os.path.join("subscriptors", f"{subscriptor}.txt")
         with open(archivo_subscriptor, 'w', encoding='utf-8') as archivo:
             pass
         self.suscriptores[subscriptor] = set()
@@ -99,7 +104,7 @@ class Servel:
                     coincide = True
                     break
             if coincide:
-                archivo_subscriptor = os.path.join("servel/subscriptors", f"{subscriptor}.txt")
+                archivo_subscriptor = os.path.join("subscriptors", f"{subscriptor}.txt")
                 with open(archivo_subscriptor, 'a', encoding='utf-8') as archivo:
                     archivo.write(f"{sucursal};{votante_nombre};{evento}\n")
 

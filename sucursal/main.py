@@ -12,6 +12,7 @@ class Sucursal:
         self.nombre = nombre
         self.votos = {}
         self.registro = {}
+        self.configuracion = {}
         self.estado = "Abierta"
         # Conectar con el servidor Servel via RPC
         IP_TAREA = "127.0.0.1"
@@ -19,12 +20,12 @@ class Sucursal:
 
     def solicitar_información(self) -> None:
         # Inicializa estructura de votos y registro según configuración Servel.
+        self.configuracion = self.servel.get_configuracion()
         self.votos = {}
         self.registro = {}
-        if hasattr(self.servel, 'configuracion') and self.servel.configuracion:
-            for id_votacion in self.servel.configuracion.get('temas_votaciones', {}).keys():
-                self.votos[id_votacion] = []
-                self.registro[id_votacion] = []
+        for id_votacion in self.configuracion.get('temas_votaciones', {}).keys():
+            self.votos[id_votacion] = []
+            self.registro[id_votacion] = []
 
     def cerrar_temporal(self) -> None:
         self.estado = "Cerrada"
@@ -58,14 +59,14 @@ class Sucursal:
         if self.estado != "Abierta":
             evento = "Cerrado"
         ### 1.b. la votación no existe
-        elif id_votacion not in self.servel.configuracion["temas_votaciones"]:
+        elif id_votacion not in self.configuracion["temas_votaciones"]:
             evento = "No existe"
         ### 1.d. el votante está indocumentado
         elif "Indocumentado" in estados:
             if "Corrupto" not in estados:
                 evento = "Indocumentado"
         ### 1.c. el votante no está inscrito en la sucursal para dicha votación
-        elif int(id_votante) not in self.servel.configuracion["votantes_habilitados_sucursal"][self.nombre][id_votacion]:
+        elif int(id_votante) not in self.configuracion["votantes_habilitados_sucursal"][self.nombre][id_votacion]:
             if "Mov. Reducida" not in estados:
                 evento = "Sucursal incorrecta"
         ### 1.e. el votante ya votó previamente en dicha sucursal para la votación indicada
@@ -75,7 +76,7 @@ class Sucursal:
 
         # Registrar voto
         if evento == "":
-            opciones_validas = self.servel.configuracion["opciones_votaciones"].get(id_votacion, [])
+            opciones_validas = self.configuracion["opciones_votaciones"].get(id_votacion, [])
             # Caso negacionista
             if "Negacionista" in estados:
                 prefs_nuevas = set(opciones_validas) - set(preferencias)
