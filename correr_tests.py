@@ -4,10 +4,14 @@ import re
 import shutil
 import time
 import random
+import sys
 from xmlrpc.client import ServerProxy
 from constantes import TIEMPO_ENTRE_EVENTOS, COMANDO_PYTHON
 from subprocess import Popen, DEVNULL, STDOUT
 import threading
+
+
+PROCESOS_PATH = ".correr_tests_procesos.json"
 
 
 def load_jsonc(path):
@@ -74,6 +78,29 @@ def terminar_procesos(procesos):
             print(f"Error al terminar el proceso: {e}")
             continue
     time.sleep(2)
+
+
+def guardar_procesos(procesos):
+    with open(PROCESOS_PATH, "w", encoding="utf-8") as archivo:
+        json.dump([proceso.pid for proceso in procesos], archivo)
+
+
+def apagar_procesos_registrados():
+    if not os.path.exists(PROCESOS_PATH):
+        print("No hay procesos registrados para apagar.")
+        return
+
+    with open(PROCESOS_PATH, "r", encoding="utf-8") as archivo:
+        pids = json.load(archivo)
+
+    for pid in pids:
+        try:
+            os.system(f"taskkill /PID {pid} /F >NUL 2>NUL")
+        except Exception as e:
+            print(f"Error al apagar el proceso {pid}: {e}")
+
+    os.remove(PROCESOS_PATH)
+    print("Procesos apagados.")
 
 
 def run_event(evento, sucursal_rpcs, servel_rpc):
@@ -149,6 +176,7 @@ def run_test(CARPETA, testname, mostrar_print_alumnos=False, index=0):
         name_log,
         mostrar_print_alumnos,
     )
+    guardar_procesos(procesos)
 
     # Conectarse al RPC de servel
     servel_rpc = ServerProxy(f"http://127.0.0.1:{PUERTO_SERVEL}")
@@ -157,6 +185,7 @@ def run_test(CARPETA, testname, mostrar_print_alumnos=False, index=0):
     sucursal_rpcs = {}
     for sucursal, puerto in zip(sucursales, PUERTOS_SUCURSALES):
         sucursal_rpc = ServerProxy(f"http://127.0.0.1:{puerto}")
+        print(f'Sucursal {sucursal}')
         sucursal_rpc.solicitar_información()
         sucursal_rpcs[sucursal] = sucursal_rpc
 
@@ -199,10 +228,12 @@ def run_test(CARPETA, testname, mostrar_print_alumnos=False, index=0):
     terminar_procesos(procesos)
 
 def preparar_entorno():
+    print('Comenzando a preparar el entorno...')
     carpetas_necesarias = ["logs", "subscriptors", "votes_configurations"]
 
     for carpeta in carpetas_necesarias:
         ruta_carpeta = os.path.join("servel", carpeta)
+        print(f'Evaluando la carpeta {ruta_carpeta}')
         # Eliminar carpeta si existe
         if os.path.exists(ruta_carpeta):
             shutil.rmtree(ruta_carpeta)
@@ -212,7 +243,12 @@ def preparar_entorno():
 
 if __name__ == "__main__":
     CARPETA = "tests_publicos"
-    MOSTRAR_PRINTS = False
+    MOSTRAR_PRINTS = True
+    solo_apagar = len(sys.argv) > 1 and sys.argv[1].lower() == "apagar"
+
+    if solo_apagar:
+        apagar_procesos_registrados()
+        sys.exit(0)
 
     preparar_entorno()
 
